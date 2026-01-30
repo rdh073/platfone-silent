@@ -13,3 +13,5 @@ yarn-error.log*
 # *.js.map
 # *.d.ts
 hardening_report.md
+.agent/
+dry_run_report.md
