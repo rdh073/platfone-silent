@@ -1,25 +1,32 @@
+# Development
 node_modules/
-.env
 dist/
+coverage/
+.agent/
+.DS_Store
+.idea/
+.vscode/
+
+# Environment & Secrets
+.env
+.env.*
+!.env.example
+*.bak
+
+# Reports & Logs
 *.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-.DS_Store
-.idea/
-.vscode/
-# Compiled TypeScript (if you prefer to exclude it)
+*report.md
+pre_flight_readiness_summary.md
+
+# Compiled TS
 *.js
 *.js.map
 *.d.ts
-hardening_report.md
-.agent/
-dry_run_report.md
-simulation_report.md
-financial_simulation_report.md
-webhook_simulation_report.md
-pre_flight_readiness_summary.md
-*.bak
+
+# Temporary / Ad-hoc Scripts
 test_api.ts
 dry_run.ts
 simulate_webhook.ts
