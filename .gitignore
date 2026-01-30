@@ -15,3 +15,13 @@ yarn-error.log*
 hardening_report.md
 .agent/
 dry_run_report.md
+simulation_report.md
+financial_simulation_report.md
+webhook_simulation_report.md
+pre_flight_readiness_summary.md
+*.bak
+test_api.ts
+dry_run.ts
+simulate_webhook.ts
+webhook_listener.ts
+src/webhook_server.ts
