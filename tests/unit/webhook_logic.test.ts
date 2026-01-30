@@ -59,7 +59,7 @@ describe('Unified Webhook Logic (ADR-004)', () => {
         expect(result.status).toBe('halt'); // Already active
     });
 
-    test('Should FAIL on illegal transition (Zombie update)', () => {
+    test('Should HALT on illegal transition (Zombie update)', () => {
         const canceledState: Activation = {
             ...baseActivation,
             state: LifecycleState.CANCELED
@@ -71,7 +71,7 @@ describe('Unified Webhook Logic (ADR-004)', () => {
         };
 
         const result = handleActivationWebhook(event, canceledState);
-        expect(result.status).toBe('failure'); // Cannot revive CANCELED
+        expect(result.status).toBe('halt'); // Out-of-order ignored safely
     });
 
     test('Should FAIL on ID mismatch', () => {
