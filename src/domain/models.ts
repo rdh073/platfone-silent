@@ -35,6 +35,7 @@ export interface PriceData {
  * Availability data for a service in a country.
  */
 export interface Availability {
+    country: string; // ISO Code (e.g. US, ID)
     price: PriceData;
     count: number;
     quality?: {

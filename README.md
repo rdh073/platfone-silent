@@ -52,6 +52,54 @@ This library uses `.env` for configuration.
 
 We provide ready-to-run examples in the `examples/` directory.
 
+### 0. High-Level Workflow (Recommended)
+The easiest way to use the library. You provide the configuration (via `.env`) and the client, and the package handles the rest (Fetching -> Ranking -> Safety Check -> Execution).
+
+**Run:** `npx ts-node examples/easy_workflow.ts`
+
+```typescript
+import { runActivationWorkflow, PlatfoneClient, PricePolicy } from 'platfone-activation';
+
+// 1. Setup Client
+const client = new PlatfoneClient(process.env.PLATFONE_API_KEY, process.env.PLATFONE_API_BASE_URL);
+
+// 2. Run Workflow
+const result = await runActivationWorkflow({
+    serviceId: 'wa',
+    pricePolicy: PricePolicy.BALANCED,
+    maxBudget: 1.00,
+    executionMode: 'DRY_RUN' // or 'LIVE' from env
+}, { 
+    gateway: client 
+});
+```
+
+### 0.1 Asynchronous Webhook Handling (ADR-004)
+The library provides a pure, IO-free handler to reconcile states from provider webhooks. This follows **ADR-004** (Unified Activation Flow) which guarantees that webhooks can only update existing activations, never create or bill them.
+
+```typescript
+import { handleActivationWebhook } from 'platfone-activation';
+
+// 1. You receive a webhook event (authenticated by your app)
+const event = { activationId: '123', status: 'active', smsCode: '9999' };
+
+// 2. You load the current activation from your DB
+const current = await myDb.load('123');
+
+// 3. Reconcile with the library
+const result = handleActivationWebhook(event, current);
+
+if (result.status === 'success') {
+    // 4. Update your database with the instruction
+    await myDb.update('123', result.instruction);
+    
+    // 5. If instruction says so, perform side effects (like finalization)
+    if (result.instruction.shouldFinalize) {
+        await client.finalizeActivation('123');
+    }
+}
+```
+
 ### 1. Simple Activation (Service Only)
 Request a number for a service (e.g., WhatsApp) *without* specifying a country. The API will pick the best one based on your Policy.
 
