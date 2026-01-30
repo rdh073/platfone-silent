@@ -10,7 +10,7 @@
 ✅ **ADR-001: Activation Lifecycle State Machine — FINAL**
 ✅ **ADR-002: Webhook vs Polling Authority — FINAL**
 ✅ **ADR-003: Billing Idempotency — FINAL**
-✅ **ADR-004: Price Policy & Selection — FINAL**  (Implied by PriceSelector correctness)
+✅ **ADR-004: Unified Activation Flow — FINAL (LOCKED)**
 
 ✅ No pending ADR discussions
 ✅ No “temporary” bypasses in code

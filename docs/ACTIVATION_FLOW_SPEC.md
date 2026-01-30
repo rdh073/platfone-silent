@@ -68,26 +68,32 @@ export function runActivationWorkflow(
 ): Promise<WorkflowResult>;
 ```
 
-### B. Webhook Handler API (New)
+### B. Webhook Handler API (Final)
 ```typescript
 export interface WebhookEvent {
     activationId: string;
     status: string; // Remote status
-    smsCode?: string;
-    smsText?: string;
+    smsCode?: string | undefined;
+    smsText?: string | undefined;
 }
+
+export type WebhookResult =
+    | { status: 'success'; instruction: StateUpdate }
+    | { status: 'halt'; reason: string }
+    | { status: 'failure'; error: Error };
 
 export interface StateUpdate {
     newState: LifecycleState;
-    smsCode?: string;
-    smsText?: string;
+    newSmsStatus: SmsStatus;
+    smsCode?: string | undefined;
+    smsText?: string | undefined;
     shouldFinalize: boolean;
 }
 
 export function handleActivationWebhook(
     event: WebhookEvent,
     current: Activation
-): Result<StateUpdate>;
+): WebhookResult;
 ```
 
 ## 5. Failure & Edge Case Handling

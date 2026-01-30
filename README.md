@@ -2,6 +2,10 @@
 
 **Robust activation management library with state machine validation and webhook reconciliation for the Platfone API.**
 
+> [!IMPORTANT]
+> **Architecture Status: LOCKED**
+> This project follows **ADR-004: Unified Activation Flow**. The separation of authority between the Workflow (Creation) and Webhook (Outcome) is an immutable architectural law of this library.
+
 This library provides a safe, type-checked, and resilient way to interact with the Platfone API for managing temporary phone number activations. It enforces strict architectural invariants (like "Explicit State Over Implicit Behavior") to prevent billing leaks and undefined states.
 
 ## Features
