@@ -9,9 +9,9 @@ yarn-error.log*
 .idea/
 .vscode/
 # Compiled TypeScript (if you prefer to exclude it)
-# *.js
-# *.js.map
-# *.d.ts
+*.js
+*.js.map
+*.d.ts
 hardening_report.md
 .agent/
 dry_run_report.md
