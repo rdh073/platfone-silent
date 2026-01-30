@@ -82,7 +82,7 @@ function mapRemoteStatus(
         case 'canceled':
             return LifecycleState.CANCELED;
         default:
-            return null; // internal events or unknown
+            return null; // unknown / ignored event
     }
 }
 
@@ -112,6 +112,8 @@ export function handleActivationWebhook(
      * If provider says 'active' but has an SMS code, we are locally 'SMS_RECEIVED'
      * --------------------------------- */
     let nextState = mapRemoteStatus(event.status);
+
+    // Unknown events are SAFE TO IGNORE (halt)
     if (!nextState) {
         return halt(`Unknown status: ${event.status}`);
     }
@@ -124,6 +126,7 @@ export function handleActivationWebhook(
      * Invariant 4: Monotonic transition
      * --------------------------------- */
     if (!isForwardOrSame(current.state, nextState)) {
+        // Out-of-order or rollback ignored: just halt
         return halt(`Out-of-order or rollback ignored: ${current.state} -> ${nextState}`);
     }
 
@@ -137,13 +140,13 @@ export function handleActivationWebhook(
     }
 
     /* ---------------------------------
-     * Result Calculation (NO SIDE EFFECTS)
+     * Instruction Calculation (NO SIDE EFFECTS)
      * --------------------------------- */
     return ok({
         newState: nextState,
         newSmsStatus: eventCode ? SmsStatus.SMS_RECEIVED : current.smsStatus,
         smsCode: eventCode || currentCode,
         smsText: event.smsText || current.smsText || undefined,
-        shouldFinalize: nextState === LifecycleState.FINALIZED
+        shouldFinalize: false // consumer decides when to finalize (ADR-004)
     });
 }
