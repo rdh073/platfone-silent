@@ -1,6 +1,6 @@
 import { IActivationRepository } from '../domain/repository';
 import { PlatfoneClient, RateLimitError } from '../api/platfone_client';
-import { InvariantCheckingStateMachine, EventSource } from '../domain/state_machine';
+import { handleActivationWebhook } from '../workflow/webhook_logic';
 
 export class ReconciliationWorker {
     constructor(
@@ -44,7 +44,7 @@ export class ReconciliationWorker {
 
     /**
      * Syncs a single activation's state from the remote API.
-     * Truth resides in the combination of Webhook + API.
+     * Unified Reconciliation Strategy: TREAT POLL AS PSEUDO-WEBHOOK.
      */
     async syncOne(activationId: string): Promise<void> {
         const local = await this.repository.findById(activationId);
@@ -53,35 +53,38 @@ export class ReconciliationWorker {
         try {
             const remote = await this.api.getActivation(activationId);
 
-            // We use the state machine to transition from local to remote state.
-            // This enforces invariants like monotonic progression.
-            const nextState = InvariantCheckingStateMachine.deriveFromPayload(
-                local,
-                {
-                    activation_status: remote.state, // Map the domain status back to what driveFromPayload expects if needed
-                    sms_status: remote.smsStatus
-                },
-                EventSource.POLL
-            );
+            // ADR-004: Polling MUST reuse handleActivationWebhook logic.
+            const result = handleActivationWebhook({
+                activationId: activationId,
+                status: remote.state,
+                smsCode: remote.smsCode ?? undefined,
+                smsText: remote.smsText ?? undefined
+            }, local);
 
-            // Only update if something changed
-            if (nextState.state !== local.state || nextState.smsStatus !== local.smsStatus) {
+            if (result.status === 'success') {
+                const { instruction } = result;
                 const updated = {
                     ...local,
-                    ...nextState,
-                    smsCode: remote.smsCode ?? local.smsCode,
-                    smsText: remote.smsText ?? local.smsText,
+                    state: instruction.newState,
+                    smsStatus: instruction.newSmsStatus,
+                    smsCode: instruction.smsCode ?? local.smsCode,
+                    smsText: instruction.smsText ?? local.smsText,
                     updatedAt: Math.floor(Date.now() / 1000),
                 };
                 await this.repository.save(updated);
                 console.log(`[Worker] RECONCILED: ${activationId} (${local.state} -> ${updated.state})`);
+            } else if (result.status === 'halt') {
+                // Idempotent or safe ignore
+            } else {
+                console.error(`[Worker] Invariant Logic Failure for ${activationId}: ${result.error.message}`);
             }
+
         } catch (error: any) {
             if (error.statusCode === 404) {
                 console.warn(`[Worker] GHOST ACTIVATION detected: ${activationId} missing on server.`);
-                // Note: As per Doctrine 3, we freeze it for manual verification if it's supposed to be active
             }
             throw error;
         }
     }
 }
+

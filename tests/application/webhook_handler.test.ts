@@ -53,7 +53,7 @@ describe('WebhookHandler', () => {
         expect(updated?.smsCode).toBe('123456');
     });
 
-    test('handles unknown activation gracefully', async () => {
+    test('rejects unknown activation for retry purposes (ADR-004)', async () => {
         const payload: WebhookPayload = {
             event_type: 'activation.updated',
             event_id: 'evt-1',
@@ -64,14 +64,11 @@ describe('WebhookHandler', () => {
             }
         };
 
-        const spy = jest.spyOn(console, 'warn').mockImplementation();
-        const result = await handler.handle(payload);
-        expect(result.result).toBe('success');
-        expect(spy).toHaveBeenCalledWith(expect.stringContaining('NOT FOUND'));
-        spy.mockRestore();
+        // ADR-004 requires rejection so provider retries.
+        await expect(handler.handle(payload)).rejects.toThrow(/not found/);
     });
 
-    test('logs invariant violation but returns success', async () => {
+    test('logs halt on illegal transition (Zombie update)', async () => {
         // Save as FINALIZED, then send a webhook to move it to ACTIVE (illegal)
         await repository.save({ ...mockActivation, state: LifecycleState.FINALIZED });
 
@@ -85,10 +82,10 @@ describe('WebhookHandler', () => {
             }
         };
 
-        const spy = jest.spyOn(console, 'error').mockImplementation();
+        const spy = jest.spyOn(console, 'log').mockImplementation();
         const result = await handler.handle(payload);
         expect(result.result).toBe('success');
-        expect(spy).toHaveBeenCalledWith(expect.stringContaining('INVARIANT VIOLATION'));
+        expect(spy).toHaveBeenCalledWith(expect.stringContaining('HALT'));
         spy.mockRestore();
 
         // Verify state stayed FINALIZED

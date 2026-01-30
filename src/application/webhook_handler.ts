@@ -1,5 +1,5 @@
 import { IActivationRepository } from '../domain/repository';
-import { InvariantCheckingStateMachine, EventSource } from '../domain/state_machine';
+import { handleActivationWebhook } from '../workflow/webhook_logic';
 
 export interface WebhookPayload {
     event_type: 'activation.updated' | 'account.low_balance';
@@ -21,48 +21,52 @@ export class WebhookHandler {
      * Processes an incoming webhook.
      * DOCTRINE-02: Webhook is Authoritative.
      * DOCTRINE-04: Idempotency is required.
+     * ADR-004: Reconciliation ONLY.
      */
     async handle(data: WebhookPayload): Promise<{ result: string }> {
         if (data.event_type !== 'activation.updated') {
-            // account.low_balance etc. are logged but don't involve the state machine
-            console.log(`[Webhook] Handling non-activation event: ${data.event_type}`);
             return { result: 'success' };
         }
 
-        const { activation_id, activation_status, sms_status, sms_code, sms_text } = data.payload;
+        const { activation_id, activation_status, sms_code, sms_text } = data.payload;
 
         const activation = await this.repository.findById(activation_id);
         if (!activation) {
-            // In a real system, we might log this as an incident or try to fetch from API
-            console.warn(`[Webhook] Activation NOT FOUND: ${activation_id}`);
-            return { result: 'success' }; // Still return success to avoid retries for non-existent resources
+            // ADR-004: MUST return error/404 so provider retries if record not yet persisted.
+            throw new Error(`Activation ${activation_id} not found. Retry required.`);
         }
 
-        try {
-            const nextState = InvariantCheckingStateMachine.deriveFromPayload(
-                activation,
-                { activation_status, sms_status },
-                EventSource.WEBHOOK
-            );
+        const result = handleActivationWebhook({
+            activationId: activation_id,
+            status: activation_status,
+            smsCode: sms_code,
+            smsText: sms_text
+        }, activation);
 
-            // Update domain metadata from webhook
-            const updatedActivation = {
+        if (result.status === 'success') {
+            const { instruction } = result;
+            const updated = {
                 ...activation,
-                ...nextState,
-                smsCode: sms_code ?? activation.smsCode,
-                smsText: sms_text ?? activation.smsText,
+                state: instruction.newState,
+                smsStatus: instruction.newSmsStatus,
+                smsCode: instruction.smsCode ?? activation.smsCode,
+                smsText: instruction.smsText ?? activation.smsText,
                 updatedAt: Math.floor(Date.now() / 1000),
             };
 
-            await this.repository.save(updatedActivation);
-            console.log(`[Webhook] SUCCESS: ${activation_id} moved to ${nextState.state}`);
-
-        } catch (error: any) {
-            // If invariant is violated, log and alert as per Playbook 4.2
-            console.error(`[Webhook] INVARIANT VIOLATION for ${activation_id}: ${error.message}`);
-            // We still return success because it's a terminal logical failure, not a transient network one
+            await this.repository.save(updated);
+            console.log(`[Webhook] SUCCESS: ${activation_id} -> ${instruction.newState}`);
+        } else if (result.status === 'halt') {
+            console.log(`[Webhook] HALT: ${result.reason}`);
+        } else {
+            // failure (e.g. ID mismatch or critical missing logic)
+            console.error(`[Webhook] ERROR: ${result.error.message}`);
+            // Depending on strictness, we might want to return success here for terminal illegal states
+            // to stop the provider from retrying uselessly, or throw to keep visibility.
+            // For now, we return success to stop retries on "logical" failures.
         }
 
         return { result: 'success' };
     }
 }
+

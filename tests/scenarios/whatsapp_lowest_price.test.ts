@@ -5,24 +5,21 @@ describe('Scenario: WhatsApp Lowest Price Selection', () => {
     // Mock Data simulating API response for 'getPrices("wa")'
     const waOffers: Availability[] = [
         {
-            service_id: 'wa',
-            country_id: 'US', // Expensive
-            price: 5.00,
-            quality: 0.9,
+            country: 'US', // Expensive
+            price: { min: 5.00, max: 6.00, suggested: 5.50 },
+            quality: { avg: 0.9 },
             count: 100
         },
         {
-            service_id: 'wa',
-            country_id: 'ID', // Cheapest!
-            price: 0.15,
-            quality: 0.7,
+            country: 'ID', // Cheapest!
+            price: { min: 0.15, max: 0.20, suggested: 0.18 },
+            quality: { avg: 0.7 },
             count: 500
         },
         {
-            service_id: 'wa',
-            country_id: 'RU', // Middle
-            price: 2.00,
-            quality: 0.5,
+            country: 'RU', // Middle
+            price: { min: 2.00, max: 2.50, suggested: 2.25 },
+            quality: { avg: 0.5 },
             count: 20
         }
     ];
@@ -35,9 +32,9 @@ describe('Scenario: WhatsApp Lowest Price Selection', () => {
         // 2. Act: Run the Selector Logic
         // Map API Availability[] to Domain Offer[]
         const offers = waOffers.map(avail => ({
-            id: avail.country_id,
-            price: avail.price,
-            quality: avail.quality
+            id: avail.country,
+            price: avail.price.min,
+            quality: avail.quality?.avg || 0.5
         }));
 
         const ranked = PriceSelector.rank(offers, {
@@ -45,7 +42,7 @@ describe('Scenario: WhatsApp Lowest Price Selection', () => {
             maxPrice: maxBudget
         });
 
-        const bestOption = ranked[0];
+        const bestOption = ranked[0]!;
 
         // 3. Assert: Verify the decision
         expect(bestOption).toBeDefined();
@@ -53,17 +50,17 @@ describe('Scenario: WhatsApp Lowest Price Selection', () => {
         expect(bestOption.price).toBe(0.15);
 
         // Ensure others are ranked correctly (ascending price)
-        expect(ranked[1].id).toBe('RU'); // 2.00
-        expect(ranked[2].id).toBe('US'); // 5.00
+        expect(ranked[1]!.id).toBe('RU'); // 2.00
+        expect(ranked[2]!.id).toBe('US'); // 5.00
     });
 
     test('should fail if all offers exceed budget', () => {
         const tightBudget = 0.10; // Lower than cheapest (0.15)
 
         const offers = waOffers.map(avail => ({
-            id: avail.country_id,
-            price: avail.price,
-            quality: avail.quality
+            id: avail.country,
+            price: avail.price.min,
+            quality: avail.quality?.avg || 0.5
         }));
 
         expect(() => {

@@ -22,8 +22,8 @@ const fail = (msg: string): WebhookResult => ({
 export interface WebhookEvent {
     activationId: string;
     status: string; // provider status (raw)
-    smsCode?: string;
-    smsText?: string;
+    smsCode?: string | undefined;
+    smsText?: string | undefined;
 }
 
 export interface StateUpdate {
