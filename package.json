@@ -1,0 +1,29 @@
+{
+  "name": "platfone-activation",
+  "version": "1.0.0",
+  "description": "Robust activation management library with state machine validation and webhook reconciliation for the Platfone API.",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@types/express": "^5.0.6",
+    "axios": "^1.13.4",
+    "body-parser": "^2.2.2",
+    "dotenv": "^17.2.3",
+    "express": "^5.2.1",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3"
+  },
+  "devDependencies": {
+    "@types/jest": "^30.0.0",
+    "@types/node": "^25.1.0",
+    "axios-mock-adapter": "^2.1.0",
+    "jest": "^30.2.0",
+    "ts-jest": "^29.4.6",
+    "vitest": "^4.0.18"
+  }
+}
