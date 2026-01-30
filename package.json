@@ -2,8 +2,14 @@
   "name": "platfone-activation",
   "version": "1.0.0",
   "description": "Robust activation management library with state machine validation and webhook reconciliation for the Platfone API.",
-  "main": "index.js",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
   "scripts": {
+    "build": "tsc",
+    "prepublishOnly": "npm run build",
     "test": "jest"
   },
   "keywords": [],
@@ -25,5 +31,8 @@
     "jest": "^30.2.0",
     "ts-jest": "^29.4.6",
     "vitest": "^4.0.18"
+  },
+  "publishConfig": {
+    "registry": "http://185.185.80.116:4873"
   }
 }

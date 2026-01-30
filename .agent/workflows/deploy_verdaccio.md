@@ -39,18 +39,18 @@ Once the server is running on `http://185.x.x.x:4873`, configure your local proj
 
 ### Create User
 ```bash
-npm adduser --registry http://185.x.x.x:4873
+npm adduser --registry http://185.185.80.116:4873
 ```
 
 ### Publish Package
 ```bash
-npm publish --registry http://185.x.x.x:4873
+npm publish --registry http://185.185.80.116:4873
 ```
 
 ### (Optional) Project-Level Config
 Create a `.npmrc` file in your project root to force this scope to the private registry:
 ```ini
-registry=http://185.x.x.x:4873/
+registry=http://185.185.80.116:4873/
 # Or scoped:
-# @my-scope:registry=http://185.x.x.x:4873/
+# @my-scope:registry=http://185.185.80.116:4873/
 ```
